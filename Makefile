@@ -5,7 +5,7 @@
 # The project is compiled under C++11 and Boost.
 
 CC = g++
-CFLAGS = -c -Wall -O3 -std=c++0x -g
+CFLAGS = -c -Wall -O3 -std=c++0x -g -lssl
 DEPS = src/configure.h src/ccache.h src/network.h src/sharding.h src/solver.h
 OBJECTS = ccache.o network.o sharding.o solver.o
 
