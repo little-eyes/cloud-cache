@@ -24,18 +24,16 @@
  */
 
 #include <iostream>
-#include <openssl/sha.h>
 #include "slave.h"
+#include "sharding.h"
 #include <cstring>
 #include <cstdio>
 using namespace std;
 
 int main() {
-	unsigned char orig[] = "Original String";
-	unsigned char hash[20];
-	SHA1(orig, 16, hash);
-	cout << MASTER_HOST << endl;
-	printf("%s\n", hash);
+	ShardingProvider *sp = new ShardingProvider();
+	cout << sp->getTaskShardingByIp("Test") << endl;
+	cout << sp->getCacheShardingByIp("Test") << endl;
 	return 0;
 }
 

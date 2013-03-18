@@ -20,12 +20,16 @@ using namespace std;
 static const string MASTER_HOST = 
 	"hydra1.eecs.utk.edu"; /* the master host name */
 
-static const vector <string> SLAVE_HOST = {
+static const vector <string> SLAVE_HOSTS = {
 	"hydra2.eecs.utk.edu",
 	"hydra3.eecs.utk.edu",
 	"hydra4.eecs.utk.edu"}; /* the slave hosts name */
 
-static const vector <string> DATA_HOST = {
+static const vector <string> DATA_HOSTS = {
 	"hydra2.eecs.utk.edu",
 	"hydra2.eecs.utk.edu",
 	"hydra2.eecs.utk.edu"}; /* the data hosts name */
+
+static const int NUM_SLAVE_HOSTS = 3; /* number of slave hosts */
+
+static const int NUM_DATA_HOSTS = 3; /* number of data hosts */

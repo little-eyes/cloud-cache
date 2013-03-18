@@ -27,11 +27,15 @@ class ShardingProvider {
 public:
 	ShardingProvider();
 	~ShardingProvider();
-	string getTaskSharding(const string &key);
-	string getCacheSharding(const string &key);
+	string getTaskShardingByIp(const string &key);
+	int getTaskShardingByIndex(const string &key);
+	string getCacheShardingByIp(const string &key);
+	int getCacheShardingByIndex(const string &key);
 
 private:
 	string sha1(const string &key);
+	int ElfHash(const string &key);
+	int XorHash(const string &key);
 };
 
 }
