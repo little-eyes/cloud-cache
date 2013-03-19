@@ -5,17 +5,19 @@
 # The project is compiled under C++11 and Boost.
 
 CC = g++
-CFLAGS = -c -Wall -O3 -std=c++0x -g
+CFLAGS = -c -Wall -O -std=c++0x -g -fpermissive
 DEPS = src/configure.h src/ccache.h src/network.h src/sharding.h src/solver.h src/hiredis/hiredis.h
 OBJECTS = ccache.o network.o sharding.o solver.o
+# the static library for libredis
+LIBC_REDIS = src/hiredis/libhiredis.a
 
 all: master slave
 
-master: master.o ccache.o network.o sharding.o solver.o
-	$(CC) master.o ccache.o network.o sharding.o solver.o -o master
+master: master.o $(OBJECTS)
+	$(CC) master.o $(OBJECTS) -o master
 
-slave: slave.o ccache.o network.o sharding.o solver.o
-	$(CC) slave.o ccache.o network.o sharding.o solver.o -o slave
+slave: slave.o $(OBJECTS)
+	$(CC) slave.o $(LIBC_REDIS) $(OBJECTS) -o slave
 
 ccache.o: $(DEPS) src/ccache.cc
 	$(CC) $(CFLAGS) src/ccache.cc
