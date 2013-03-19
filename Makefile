@@ -6,7 +6,7 @@
 
 CC = g++
 CFLAGS = -c -Wall -O3 -std=c++0x -g
-DEPS = src/configure.h src/ccache.h src/network.h src/sharding.h src/solver.h
+DEPS = src/configure.h src/ccache.h src/network.h src/sharding.h src/solver.h src/hiredis/hiredis.h
 OBJECTS = ccache.o network.o sharding.o solver.o
 
 all: master slave
