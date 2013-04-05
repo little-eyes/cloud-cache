@@ -29,15 +29,14 @@
 
 #include <string>
 #include "ccache.h"
-#include "configure.h"
 
 namespace std {
 
-CloudCache::CloudCache() {
+DataManager::DataManager() {
 	
 };
 
-CloudCache::~CloudCache() {
+DataManager::~DataManager() {
 
 };
 
@@ -46,21 +45,16 @@ CloudCache::~CloudCache() {
  * return the string if the key found, otherwise
  * the NULL pointer is returned.
  * */
-string CloudCache::query(const string &key) {
+string DataManager::get(const string &key) {
 
 	return NULL;
 };
 
-bool insert(const string &key, const string &value) {
+bool DataManager::put(const string &key, const string &value) {
 
 	return true;
 };
 
-
-int CloudCache::getShardingHashCode(const string &key) {
-
-	return 0;
-};
 
 }
 

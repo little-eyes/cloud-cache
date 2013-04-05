@@ -28,19 +28,44 @@
  */
 
 #include <string>
+#include "hiredis/hiredis.h"
+#include "configure.h"
 
 namespace std {
-	
-class CloudCache {
+
+/*
+ * The redis server connector.
+ * It takes the "key" to select the redis server as the
+ * dedicated storage server for itself.
+ * The getContext() API returns the redis connection context.
+ * Note the context is synchronous.
+ */
+class StorageConnector {
 
 public:
-	CloudCache();
-	~CloudCache();
-	string query(const string &key);
-	bool insert(const string &key, const string &value);
+	StorageConnector(const string &key);
+	~StorageConnector();
+	redisContext *getContext();
 
 private:
 	int getShardingHashCode(const string &key);
+	redisContext *__context;
+};
+
+
+/*
+ * The data manager class.
+ */
+class DataManager {
+
+public:
+	DataManager();
+	~DataManager();
+	string get(const string &key);
+	bool put(const string &key, const string &value);
+
+private:
+	redisContext *__context;
 };
 
 }
