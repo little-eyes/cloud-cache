@@ -59,13 +59,13 @@ private:
 class DataManager {
 
 public:
-	DataManager();
+	DataManager(const StorageConnector *connector);
 	~DataManager();
 	string get(const string &key);
 	bool put(const string &key, const string &value);
 
 private:
-	redisContext *__context;
+	StorageConnector *__connector;
 };
 
 }

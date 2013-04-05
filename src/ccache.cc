@@ -32,7 +32,7 @@
 
 namespace std {
 
-DataManager::DataManager() {
+DataManager::DataManager(const StorageConnector *connector) {
 	
 };
 
