@@ -5,14 +5,19 @@
 # The project is compiled under C++11 and Boost.
 
 CC = g++
-CFLAGS = -c -Wall -O3 -std=c++0x -g -fpermissive -lm
+CFLAGS = -c -Wall -O3 -std=c++0x -g -fpermissive -pthread
 DEPS = src/configure.h src/ccache.h src/network.h src/sharding.h src/solver.h src/hiredis/hiredis.h
 OBJECTS = ccache.o network.o sharding.o solver.o
 # the static library for libredis
 LIBC_REDIS = ./src/hiredis/libhiredis.a
 
-
 all: master slave
+
+master: master.o $(OBJECTS) $(LIBC_REDIS)
+	$(CC) -pthread master.o $(OBJECTS) $(LIBC_REDIS) -o master
+
+slave: slave.o $(OBJECTS) $(LIBC_REDIS)
+	$(CC) -pthread slave.o $(OBJECTS) $(LIBC_REDIS) -o slave
 
 ccache.o: $(DEPS) src/ccache.cc $(LIBC_REDIS)
 	$(CC) $(CFLAGS) $(LIBC_REDIS) src/ccache.cc -o ccache.o
@@ -32,11 +37,6 @@ master.o: $(DEPS) $(OBJECTS) src/master.cc
 slave.o: $(DEPS) $(OBJECTS) src/slave.cc
 	$(CC) $(CFLAGS) src/slave.cc -o slave.o
 
-master: master.o $(OBJECTS) $(LIBC_REDIS)
-	$(CC) master.o $(OBJECTS) $(LIBC_REDIS) -o master
-
-slave: slave.o $(OBJECTS) $(LIBC_REDIS)
-	$(CC) slave.o $(OBJECTS) $(LIBC_REDIS) -o slave
 
 clean:
 	rm *.o master slave
