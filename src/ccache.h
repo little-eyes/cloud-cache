@@ -29,11 +29,6 @@
 
 #include <string>
 #include "hiredis/hiredis.h"
-#include "configure.h"
-
-#ifndef __cplusplus
-#define __cplusplu
-#endif
 
 namespace std {
 

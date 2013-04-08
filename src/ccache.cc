@@ -32,8 +32,24 @@
 
 namespace std {
 
+StorageConnector::StorageConnector(const string &key) {
+	__context = redisConnect(key.c_str(), 6379);
+};
+
+StorageConnector::~StorageConnector() {
+
+};
+
+int StorageConnector::getShardingHashCode(const string &key) {
+	return 0;
+};
+
+redisContext *StorageConnector::getContext() {
+	return __context;
+};
+
 DataManager::DataManager(const StorageConnector *connector) {
-	
+        __connector = connector;
 };
 
 DataManager::~DataManager() {
@@ -46,13 +62,38 @@ DataManager::~DataManager() {
  * the NULL pointer is returned.
  * */
 string DataManager::get(const string &key) {
-
-	return NULL;
+        redisReply *reply;
+        //string reply_str;
+        printf("%s\n", key.c_str());
+        reply = redisCommand(__connector->getContext(), "GET %s", key.c_str());
+        //reply_str = reply->str;
+        printf("%s\n", reply->str);
+        //printf("%s\n", reply_str);
+        string reply_str(reply->str);
+        if (reply->str == NULL) {
+            //printf("%s\n", reply_str);
+            freeReplyObject(reply);
+	    return "";
+        }  
+        else 
+            //printf("%s\n", reply_str);
+            freeReplyObject(reply);
+	    return reply_str;
 };
 
 bool DataManager::put(const string &key, const string &value) {
-
-	return true;
+        redisReply *reply;
+        
+        reply = redisCommand(__connector->getContext(), "SET %s %s", key.c_str(), value.c_str());
+        if (reply == NULL) {
+	    freeReplyObject(reply);
+            return false;
+        }
+        else {
+	    freeReplyObject(reply);
+            return true;
+        }
+	
 };
 
 
