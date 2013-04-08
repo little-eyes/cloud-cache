@@ -5,23 +5,23 @@
 # The project is compiled under C++11 and Boost.
 
 CC = g++
-CFLAGS = -c -Wall -O3 -std=c++0x -g
+CFLAGS = -c -Wall -pthread -O3 -std=c++0x -g
 DEPS = src/configure.h src/ccache.h src/network.h src/sharding.h src/solver.h
 OBJECTS = ccache.o network.o sharding.o solver.o
 
 all: master slave
 
 master: master.o ccache.o network.o sharding.o solver.o
-	$(CC) master.o ccache.o network.o sharding.o solver.o -o master
+	$(CC) -pthread  master.o ccache.o network.o sharding.o solver.o -o master
 
 slave: slave.o ccache.o network.o sharding.o solver.o
-	$(CC) slave.o ccache.o network.o sharding.o solver.o -o slave
+	$(CC) -pthread slave.o ccache.o network.o sharding.o solver.o -o slave
 
 ccache.o: $(DEPS) src/ccache.cc
 	$(CC) $(CFLAGS) src/ccache.cc
 
 network.o: $(DEPS) src/network.cc
-	$(CC) $(CFLAGS) src/network.cc
+	gcc $(CFLAGS) -pthread -fpermissive src/network.cc
 
 sharding.o: $(DEPS) src/sharding.cc
 	$(CC) $(CFLAGS) src/sharding.cc

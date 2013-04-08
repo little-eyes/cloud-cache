@@ -17,7 +17,7 @@
  */
 
 #include <string>
-void cleanup();
+
 
 namespace std {
 
@@ -27,7 +27,7 @@ public:
 	NetworkHelper();
 	~NetworkHelper();
 	bool sendMessage(const string &host, const int &port, const string &message);
-	bool startServer(const string &host, const int &listen_port);/*Do we need a server host?*/
+	void startServer(const string &host, const int &listen_port);/*Do we need a server host?*/
 	
 
 private:
@@ -36,6 +36,7 @@ private:
 	int readline(int, char *, int);
 
 	int server;         /* listening socket descriptor */
+	void cleanup();
 	void handler(void * paramsd); /*Thread handler for incoming connections*/
 
 

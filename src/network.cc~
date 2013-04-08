@@ -101,7 +101,7 @@ void NetworkHelper::handler(void * paramsd) {
     //int i;
     int client_local;   /* keep a local copy of the client's socket descriptor */
     int addr_len;       /* used to store length (size) of sockaddr_in */
-    //time_t currtime;        
+    time_t currtime;        
     //char time_msg1[6] = {'/', 'T', 'I', 'M', 'E', '\n'};
     //char time_msg2[6] = {'/', 'T', 'I', 'M', 'E', 13};
     char quit_msg1[6] = {'/', 'Q', 'U', 'I', 'T', '\n'};
@@ -149,9 +149,9 @@ void NetworkHelper::handler(void * paramsd) {
 } /* handler() */
 
 
-bool NetworkHelper::sendMessage(const string &host_str, const int &port, const string &message) {
+bool NetworkHelper::sendMessage(const string &dest, const int &port, const string &message) {
 	
-	char* dest = host_str.c_str();	
+	char* dest = dest.c_str();	
 	int SERVER_PORT = port;
 	char* msg = message.c_str();
 	strcat(msg,"\n");
@@ -228,7 +228,7 @@ bool NetworkHelper::sendMessage(const string &host_str, const int &port, const s
  	return true;
 };
 
-bool NetworkHelper::startServer(const string &host, const int &listen_port) {
+void NetworkHelper::startServer(const string &host, const int &listen_port) {
 	int client;         /* client socket descriptor */
     int addr_len;       /* used to store length (size) of sockaddr_in */
     pthread_t thread;   /* thread variable */
