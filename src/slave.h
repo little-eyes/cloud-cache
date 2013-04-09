@@ -25,3 +25,4 @@
 
 #include <iostream>
 #include "configure.h"
+#include "network.h"

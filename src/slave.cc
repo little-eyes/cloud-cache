@@ -29,6 +29,8 @@ using namespace std;
 
 int main() {
 	cout << MASTER_HOST << endl;
+	NetworkHelper networkLayer;
+	networkLayer.startServer("localhost",20202);
 	return 0;
 }
 
