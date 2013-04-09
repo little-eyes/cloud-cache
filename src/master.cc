@@ -29,10 +29,13 @@
  */
 
 #include <iostream>
+#include <string>
 #include "master.h"
 
 
 int main() {
-
+	NetworkHelper networkLayer;
+	string message("Hello I am master");
+	networkLayer.sendMessage("localhost",20202,message);
 	return 0;
 }

@@ -29,5 +29,6 @@
  */
 
 #include <iostream>
+#include "network.h"
 #include "configure.h"
 

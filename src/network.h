@@ -19,6 +19,7 @@
 #include <string>
 void cleanup();
 
+
 namespace std {
 
 class NetworkHelper {
@@ -26,20 +27,18 @@ class NetworkHelper {
 public:
 	NetworkHelper();
 	~NetworkHelper();
-	bool sendMessage(const string &host, const int &port, const string &message);
+	bool sendMessage(const string &host, const int &port, const string message);
 	bool startServer(const string &host, const int &listen_port);/*Do we need a server host?*/
-	
-
-private:
 	/* auxillary functions to read newline-terminated strings from a file/socket */	
 	int readnf (int, char *);
 	int readline(int, char *, int);
 
 	int server;         /* listening socket descriptor */
 	void handler(void * paramsd); /*Thread handler for incoming connections*/
-
+	//void cleanup();
 
 
 };
 
 }
+
