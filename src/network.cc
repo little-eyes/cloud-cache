@@ -93,64 +93,6 @@ int NetworkHelper::readline(int fd, char *str, int maxlen)
   return (n);   /* return number of characters read */
 } /* readline() */
 
-//for multithread
-
-
-void NetworkHelper::handler(void* paramsd) {
-    printf("Entering the Handler\n");
-	struct sockaddr_in cliAddr;
-    char line[MAX_MSG];
-    //char reply[MAX_MSG];
-    //int i;
-    //int client_local;   /* keep a local copy of the client's socket descriptor */
-    int addr_len;       /* used to store length (size) of sockaddr_in */
-    //time_t currtime;        
-    //char time_msg1[6] = {'/', 'T', 'I', 'M', 'E', '\n'};
-    //char time_msg2[6] = {'/', 'T', 'I', 'M', 'E', 13};
-    char quit_msg1[6] = {'/', 'Q', 'U', 'I', 'T', '\n'};
-    char quit_msg2[6] = {'/', 'Q', 'U', 'I', 'T', 13};
-    char cmd[6];
-    
-    int client_local = *((int *)paramsd); /* store client socket descriptor */
-    addr_len = sizeof(cliAddr); /* store value of size of sockaddr_in */
-    
-    /* get clients name and store in cliAddr */
-    getpeername(client_local, (struct sockaddr*)&cliAddr, &addr_len);	
-    /* reset line */
-    memset(line, 0, MAX_MSG);
-    
-    /* now read lines from the client socket */
-    while(readnf(client_local, line)!=ERROR)  /* loop - read from socket */
-    {
-		printf("Handler get it\n");
-        if (!strcmp(line,""))   /* string must not be null string */
-            break;
-        
-        //for (i = 0; i<6; i++)   /* get first 6 chars of string, capitalize */
-        //    cmd[i] = toupper(line[i]);
-        
-		//do something with the message received
-		//simply print out the message on the screen for here
-		if(strlen(line)>2)
-		{
-			//echoing the mssageo
-			printf("Message received from %s:%d: %s", inet_ntoa(cliAddr.sin_addr), ntohs(cliAddr.sin_port), line);
-			send(client_local, "MSG received\n\0", 14, 0);
-		}
-		/* Did client ask for time? */
-        /* Does client want to quit? */
-        if (strncmp(line, quit_msg1, 6) == 0 || strncmp(cmd, quit_msg2, 6) == 0)
-        {
-            printf("Received /QUIT from %s:%d\n", inet_ntoa(cliAddr.sin_addr), ntohs(cliAddr.sin_port));
-            break;
-        }
-        /* reset line */
-        memset(line,0,MAX_MSG);
-    } /* while(readnf) */
-    
-    close(client_local);        
-    return;
-} /* handler() */
 
 bool NetworkHelper::sendMessage(const string &host_str, const int &port, const string message) {
 	
@@ -236,9 +178,6 @@ bool NetworkHelper::startServer(const string &host, const int &listen_port) {
     struct sockaddr_in cliAddr;   /* socket address for client */
     struct sockaddr_in servAddr;  /* socket address for server */
 
-    //signal(SIGINT, cleanup);      /* now handle SIGTERM and SIGINT */    
-    //signal(SIGTERM, cleanup);
-  
     /* now create the server socket 
        make it an IPV4 socket (PF_INET) and stream socket (TCP)
        and 0 to select default protocol type */          
