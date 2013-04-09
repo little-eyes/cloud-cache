@@ -49,7 +49,7 @@ redisContext *StorageConnector::getContext() {
 };
 
 DataManager::DataManager(const StorageConnector *connector) {
-        __connector = connector;
+	__connector = connector;
 };
 
 DataManager::~DataManager() {
@@ -59,41 +59,33 @@ DataManager::~DataManager() {
 /*
  * The query will goes to the the Redis server,
  * return the string if the key found, otherwise
- * the NULL pointer is returned.
+ * the empty string is returned.
  * */
 string DataManager::get(const string &key) {
-        redisReply *reply;
-        //string reply_str;
-        printf("%s\n", key.c_str());
-        reply = redisCommand(__connector->getContext(), "GET %s", key.c_str());
-        //reply_str = reply->str;
-        printf("%s\n", reply->str);
-        //printf("%s\n", reply_str);
-        string reply_str(reply->str);
-        if (reply->str == NULL) {
-            //printf("%s\n", reply_str);
-            freeReplyObject(reply);
-	    return "";
-        }  
-        else 
-            //printf("%s\n", reply_str);
-            freeReplyObject(reply);
-	    return reply_str;
+	redisReply *reply = redisCommand(
+		__connector->getContext(), "GET %s", key.c_str());
+	string reply_str(reply->str);
+	if (reply->str == NULL) {
+		freeReplyObject(reply);
+		return "";
+	}  
+    else {
+		freeReplyObject(reply);
+		return reply_str;
+	}
 };
 
 bool DataManager::put(const string &key, const string &value) {
-        redisReply *reply;
-        
-        reply = redisCommand(__connector->getContext(), "SET %s %s", key.c_str(), value.c_str());
-        if (reply == NULL) {
-	    freeReplyObject(reply);
-            return false;
-        }
-        else {
-	    freeReplyObject(reply);
-            return true;
-        }
-	
+	redisReply *reply = redisCommand(
+		__connector->getContext(), "SET %s %s", key.c_str(), value.c_str());
+	if (reply == NULL) {
+		freeReplyObject(reply);
+		return false;
+    }
+    else {
+		freeReplyObject(reply);
+		return true;
+	}
 };
 
 
