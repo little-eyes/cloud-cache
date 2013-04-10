@@ -1,11 +1,7 @@
 #Intstruction
 
-## Compile IEEE format
+## Compile
 
 Use the following command:
-> $ make ieee
+> $ make
 
-## Compile ACM format
-
-Use the following command:
-> $ make acm
