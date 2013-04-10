@@ -1,17 +1,12 @@
 LATEX = pdflatex
 BIBTEX = bibtex
 
-all: acm ieee
+all: paper
 
-acm: main-acm.tex
-	$(LATEX) main-acm.tex
-	$(BIBTEX) main-acm.aux
-	$(LATEX) main-acm.tex
-
-ieee: main-ieee.tex
-	$(LATEX) main-ieee.tex 
-	$(BIBTEX) main-ieee.aux
-	$(LATEX) main-ieee.tex
+paper: main.tex
+	$(LATEX) main.tex
+	$(BIBTEX) main.aux
+	$(LATEX) main.tex
 
 clean:
 	rm *.aux *.log *.pdf *.bbl *.blg
