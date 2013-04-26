@@ -22,12 +22,23 @@ import threading
 import SocketServer
 import tools
 import configure
+import simplejson
+import kernel
 
 
 class SlaveThreadedTcpRequestHandler(SocketServer.BaseRequestHandler):
 	'''The slave handler to run a single kernel-solver.'''
 	def handle(self):
-		pass
+		# receive and extract task.
+		message = self.request.recv(4096).strip()
+		task = simplejson.load(message)['task']
+		# run the kernel-solver for the task.
+		solver = kernel.BaseKernel3SAT(task)
+		result = solver.solve()
+		# report the results.
+		reporter = tools.TaskReporter(task, result)
+		reporter.report()
+
 
 
 class SlaveThreadedTcpServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
