@@ -31,8 +31,8 @@ int main (int argc, char *argv[]) {
 		int NumberOfExpressions = 3 * (rand() % 30 + 1);
 		fprintf(fp, "%d,%d", NumberOfVariables, NumberOfExpressions);
 		for (int j = 0; j < NumberOfExpressions; ++j) {
-			int x = (rand() % 100000) % NumberOfVariables + 1;
-			if (rand() % 100 >= 50) x = -x;
+			int x = (rand() % 100000) % NumberOfVariables;
+			if (rand() % 100 >= 80) x = -x;
 			fprintf(fp, ",%d", x);
 		}
 		fprintf(fp, "\n");

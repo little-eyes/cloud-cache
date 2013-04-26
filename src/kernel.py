@@ -14,13 +14,17 @@ class BaseKernel3SAT(object):
 	'''the brute-force approach to solve 3-SAT problem.'''
 	def __init__(self, task):
 		self._NumberOfVariable = eval(task.split(',')[0])
-		self._NumberOfExpression = eval(task.split('.')[1])
-		self._Expression = [eval(o) for o in task.split('.')[2:]]
+		self._NumberOfExpression = eval(task.split(',')[1])
+		self._Expression = [eval(o) for o in task.split(',')[2:]]
 		self._Assignment = [False for o in range(self._NumberOfVariable)]
+		print 'n: ', self._NumberOfVariable
+		print 'm: ', self._NumberOfExpression
+		print self._Expression
+		print self._Assignment
 		
 	def solve(self):
 		'''public interface for the base kernel-solver.'''
-		return self._RecurrsiveSolve(self._Expression, 0)
+		return self._RecurrsiveSolve(self._Assignment, 0)
 
 	def _RecurrsiveSolve(self, assignment, index):
 		'''internal recurrsive solution.'''
