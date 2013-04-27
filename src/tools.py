@@ -46,14 +46,20 @@ class JobDataHelper(object):
 
 class SlaveNodeSelector(object):
 	'''the Slave Node selector for a task.'''
-	def __init__(self, status):
+	def __init__(self, status, checkin):
 		self._SlaveNodeStatusTable = status
+		self._SlaveNodeCheckinTable = checkin
 	
 	def select(self):
+		EarliestCheckin = None
+		SelectedSlave = configure.SLAVE_STATUS_NOT_AVAILABLE
+		print self._SlaveNodeStatusTable
+		print self._SlaveNodeCheckinTable
 		for slave in self._SlaveNodeStatusTable.keys():
-			if self._SlaveNodeStatusTable[slave] == configure.SLAVE_STATUS_READY:
-				return slave
-		return configure.SLAVE_STATUS_NOT_AVAILABLE
+			if self._SlaveNodeStatusTable[slave] == configure.SLAVE_STATUS_READY \
+				and (EarliestCheckin == None or self._SlaveNodeCheckinTable[slave] < EarliestCheckin):
+				SelectedSlave = slave
+		return SelectedSlave
 
 
 class TaskIssuer(object):
@@ -71,6 +77,7 @@ class TaskIssuer(object):
 		sendSocket.connect((self._Ip, self._Port))
 		try:
 			sendSocket.sendall(self._Task)
+			sendSocket.close()
 		except socket.error:
 			logging.warn('Task issue failed because socket failure ...')
 		finally:
@@ -93,6 +100,7 @@ class TaskReporter(object):
 		sendSocket.connect((self._Ip, self._Port))
 		try:
 			sendSocket.sendall(self._Report)
+			sendSocket.close()
 		except socket.error:
 			logging.warn('Task report failed because socket failure ...')
 		finally:
@@ -115,6 +123,7 @@ class LocalNetworkManager(object):
 		probeSocket.connect((host, port))
 		try:
 			probeSocket.sendall(configure.MASTER_PROBE_MESSAGE)
+			probeSocket.close()
 			return True
 		except socket.timeout:
 			logging.info('Slave Node probe failure: %s ', host)

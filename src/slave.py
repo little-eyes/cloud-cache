@@ -55,7 +55,6 @@ class SlaveThreadedTcpRequestHandler(SocketServer.BaseRequestHandler):
 			reporter.report()
 
 
-
 class SlaveThreadedTcpServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 	pass
 

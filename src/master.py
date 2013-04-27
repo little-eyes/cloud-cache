@@ -20,6 +20,7 @@ import tools
 import configure
 import logging
 import simplejson
+import time
 
 
 # setup logger.
@@ -30,26 +31,30 @@ logging.basicConfig(format=FORMAT, level=logging.DEBUG)
 TaskStatusTable = {}
 SlaveNodeStatusTable = {}
 TaskSolutionTable = {}
+SlaveNodeCheckinTable = {}
 JobProgress = 0
 
 # Global functions.
 def GlobalInitialization():
 	'''the global initialization function.'''
-	global TaskStatusTable, SlaveNodeStatusTable, TaskSolutionTable, JobProgress
+	global TaskStatusTable, SlaveNodeStatusTable, TaskSolutionTable, \
+		JobProgress, SlaveNodeCheckinTable
 	TaskStatusTable = {}
 	SlaveNodeStatusTable = {}
+	SlaveNodeCheckinTable = {}
 	TaskSolutionTable = {}
 	JobProgress = 0
 	logging.info('Global initialization finished ...')
 
 def SlaveNodeRegistration():
 	'''register the slave node initially.'''
-	global SlaveNodeStatusTable
+	global SlaveNodeStatusTable, SlaveNodeCheckinTable
 	NetworkMgr = tools.LocalNetworkManager()
 	for slave in configure.SLAVE_NODE:
 		if not NetworkMgr.probeHost(slave, configure.SLAVE_PORT):
 			continue
 		SlaveNodeStatusTable[slave] = configure.SLAVE_STATUS_READY
+		SlaveNodeCheckinTable[slave] = time.time()
 	logging.info('Slave Node Registration finished ...')
 
 
@@ -73,7 +78,7 @@ class CloudCache3SATJob(object):
 					break
 					
 			# select a Slave Node if possible.
-			selector = tools.SlaveNodeSelector(SlaveNodeStatusTable)
+			selector = tools.SlaveNodeSelector(SlaveNodeStatusTable, SlaveNodeCheckinTable)
 			slave = selector.select()
 			if slave == configure.SLAVE_STATUS_NOT_AVAILABLE:
 				continue
@@ -93,7 +98,8 @@ class CloudCache3SATJob(object):
 class MasterThreadedTcpHandler(SocketServer.BaseRequestHandler):
 	'''listen to the results from the Slave Node and udpate the status.'''
 	def handle(self):
-		global TaskStatusTable, SlaveNodeStatusTable, TaskSolutionTable, JobProgress
+		global TaskStatusTable, SlaveNodeStatusTable, SlaveNodeCheckinTable, \
+			TaskSolutionTable, JobProgress
 		# receive the <task, result> pair.
 		message = self.request.recv(4096).strip()
 		message = simplejson.loads(message)
@@ -103,9 +109,11 @@ class MasterThreadedTcpHandler(SocketServer.BaseRequestHandler):
 		TaskStatusTable[task] = configure.TASK_STATUS_FINISHED
 		SlaveNodeStatusTable[self.client_address[0]] = configure.SLAVE_STATUS_READY
 		TaskSolutionTable[task] = result
+		SlaveNodeCheckinTable[self.client_address[0]] = time.time()
 		JobProgress += 1
 		logging.info('Receive solution updates from Slave Node %s, total solved = %d', 
 			self.client_address[0], JobProgress)
+		print SlaveNodeStatusTable
 
 
 class MasterThreadedTcpServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
