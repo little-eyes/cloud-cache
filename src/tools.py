@@ -12,6 +12,7 @@ import configure
 import simplejson
 import redis
 import logging
+import random
 
 
 # setup logger.
@@ -53,13 +54,14 @@ class SlaveNodeSelector(object):
 	def select(self):
 		EarliestCheckin = None
 		SelectedSlave = configure.SLAVE_STATUS_NOT_AVAILABLE
-		print self._SlaveNodeStatusTable
-		print self._SlaveNodeCheckinTable
 		for slave in self._SlaveNodeStatusTable.keys():
 			if self._SlaveNodeStatusTable[slave] == configure.SLAVE_STATUS_READY \
 				and (EarliestCheckin == None or self._SlaveNodeCheckinTable[slave] < EarliestCheckin):
 				SelectedSlave = slave
 		return SelectedSlave
+	
+	def random(self):
+		return random.choice(self._SlaveNodeStatusTable.keys())
 
 
 class TaskIssuer(object):

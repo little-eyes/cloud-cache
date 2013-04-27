@@ -79,7 +79,8 @@ class CloudCache3SATJob(object):
 					
 			# select a Slave Node if possible.
 			selector = tools.SlaveNodeSelector(SlaveNodeStatusTable, SlaveNodeCheckinTable)
-			slave = selector.select()
+			#slave = selector.select()
+			slave = selector.random()
 			if slave == configure.SLAVE_STATUS_NOT_AVAILABLE:
 				continue
 			
@@ -89,7 +90,8 @@ class CloudCache3SATJob(object):
 			TaskStatusTable[task] = configure.TASK_STATUS_WORKING
 			SlaveNodeStatusTable[slave] = configure.SLAVE_STATUS_BUSY
 			JobProgress += 1
-			logging.info('Issue to Slave Node @ %s', slave)
+			#logging.info('Issue to Slave Node @ %s', slave)
+			time.sleep(0.05)
 		# when finished, store the results to disk.
 		results = [TaskSolutionTable[task] for task in self._Data]
 		self._Helper.storeToDisk(results, self._OutputUri)
@@ -113,7 +115,6 @@ class MasterThreadedTcpHandler(SocketServer.BaseRequestHandler):
 		JobProgress += 1
 		logging.info('Receive solution updates from Slave Node %s, total solved = %d', 
 			self.client_address[0], JobProgress)
-		print SlaveNodeStatusTable
 
 
 class MasterThreadedTcpServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
@@ -128,7 +129,7 @@ if __name__ == '__main__':
 	MasterServer = MasterThreadedTcpServer((configure.MASTER_NODE[0], 
 		configure.MASTER_PORT), MasterThreadedTcpHandler)
 	MasterServerThread = threading.Thread(target=MasterServer.serve_forever)
-	MasterServerThread.daemon = True
+	#MasterServerThread.daemon = True
 	MasterServerThread.start()
 
 	# start load job
