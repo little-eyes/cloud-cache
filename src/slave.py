@@ -24,6 +24,12 @@ import tools
 import configure
 import simplejson
 import kernel
+import logging
+import time
+
+
+# setup logging.
+logging.basicConfig(level=logging.DEBUG)
 
 
 class SlaveThreadedTcpRequestHandler(SocketServer.BaseRequestHandler):
@@ -31,10 +37,20 @@ class SlaveThreadedTcpRequestHandler(SocketServer.BaseRequestHandler):
 	def handle(self):
 		# receive and extract task.
 		message = self.request.recv(4096).strip()
+		
+		# special case for probe message.
+		if message == configure.MASTER_PROBE_MESSAGE:
+			self.request.sendall(configure.SLAVE_READY_MESSAGE)
+			return
+		
+		logging.info('Receive task from Master ...')
 		task = simplejson.load(message)['task']
 		# run the kernel-solver for the task.
 		solver = kernel.BaseKernel3SAT(task)
+		__start_timer__ = time.time() # statistics collection.
 		result = solver.solve()
+		__end_timer__ = time.time()
+		logging.info('Task finished, cost = %f ...', __end_timer__ - __start_timer__)
 		# report the results.
 		reporter = tools.TaskReporter(task, result)
 		reporter.report()

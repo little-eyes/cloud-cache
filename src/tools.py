@@ -11,6 +11,11 @@ import socket
 import configure
 import simplejson
 import redis
+import logging
+
+
+# setup logger.
+logging.basicConfig(level=logging.DEBUG)
 
 
 class JobDataHelper(object):
@@ -20,6 +25,7 @@ class JobDataHelper(object):
 		data = []
 		with open(uri, 'r') as dataReader:
 			data = dataReader.readlines()
+		logging.info('Job data loaded, total tasks = %d', len(data))
 		return data
 
 	def storeToDisk(self, data, uri):
@@ -27,6 +33,7 @@ class JobDataHelper(object):
 		dataWriter = open(uri, 'w')
 		for line in data:
 			dataWriter.write(self._serializeArray(line) + '\n')
+		logging.info('Jon results stored, total results = %d', len(data))
 
 	def _serializeArray(self, array):
 		'''serialize the array to a string.'''
@@ -63,6 +70,8 @@ class TaskIssuer(object):
 		sendSocket.connect((self._Ip, self._Port))
 		try:
 			sendSocket.sendall(self._Task)
+		except socket.error:
+			logging.warn('Task issue failed because socket failure ...')
 		finally:
 			sendSocket.close()
 
@@ -82,6 +91,8 @@ class TaskReporter(object):
 		sendSocket.connect((self._Ip, self._Port))
 		try:
 			sendSocket.sendall(self._Report)
+		except socket.error:
+			logging.warn('Task report failed because socket failure ...')
 		finally:
 			sendSocket.close()
 
@@ -93,7 +104,19 @@ class LocalNetworkManager(object):
 		IpAddress = probeSocket.getsockname()[0]
 		probeSocket.close()
 		return IpAddress
-
+	
+	def probeHost(self, host, port):
+		probeSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		probeSocket.settimeout(1.0) # timeout is set to be 1 second.
+		probeSocket.connect((host, port))
+		try:
+			probeSocket.sendall(configure.MASTER_PROBE_MESSAGE)
+			response = probeSocket.recv(1024).strip()
+			return True if response == configure.SLAVE_READY_MESSAGE else False
+		except socket.timeout:
+			logging.info('Slave Node probe failure: %s ', host)
+		finally:
+			probeSocket.close()
 
 class PersistentStorageManager(object):
 	'''manage the persistent key/value (both JSON strings) storage on Redis server.'''

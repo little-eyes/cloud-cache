@@ -8,6 +8,11 @@
 	but it runs only on ONE machine. Cloud Cache provides the query APIs
 	to see if there is existing results in the cloud.
 '''
+import logging
+
+
+# setup logging.
+logging.basicConfig(level=logging.DEBUG)
 
 
 class BaseKernel3SAT(object):
@@ -17,11 +22,9 @@ class BaseKernel3SAT(object):
 		self._NumberOfExpression = eval(task.split(',')[1])
 		self._Expression = [eval(o) for o in task.split(',')[2:]]
 		self._Assignment = [False for o in range(self._NumberOfVariable)]
-		print 'n: ', self._NumberOfVariable
-		print 'm: ', self._NumberOfExpression
-		print self._Expression
-		print self._Assignment
-		
+		logging.info('BaseKernel 3-SAT initialized. n = %d, m = %d', 
+			self._NumberOfVariable, self._NumberOfExpression)
+			
 	def solve(self):
 		'''public interface for the base kernel-solver.'''
 		return self._RecurrsiveSolve(self._Assignment, 0)

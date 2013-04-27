@@ -18,7 +18,11 @@ import threading
 import SocketServer
 import tools
 import configure
+import logging
 
+
+# setup logger.
+logging.basicConfig(level=logging.DEBUG)
 
 # Global variables.
 TaskStatusTable = {}
@@ -26,16 +30,26 @@ SlaveNodeStatusTable = {}
 TaskSolutionTable = {}
 JobProgress = 0
 
+# Global functions.
 def GlobalInitialization():
 	'''the global initialization function.'''
-	global TaskStatusTable
-	global SlaveNodeStatusTable
-	global TaskSolutionTable
-	global JobProgress
+	global TaskStatusTable, SlaveNodeStatusTable, TaskSolutionTable, JobProgress
 	TaskStatusTable = {}
 	SlaveNodeStatusTable = {}
 	TaskSolutionTable = {}
 	JobProgress = 0
+	logging.info('Global initialization finished ...')
+
+def SlaveNodeRegistration():
+	'''register the slave node initially.'''
+	global SlaveNodeStatusTable
+	NetworkMgr = tools.LocalNetworkManager()
+	for slave in configure.SLAVE_NODE:
+		if not NetworkMgr.probeHost(slave, configure.SLAVE_PORT):
+			continue
+		SlaveNodeStatTable[slave] = configure.SLAVE_STATUS_READY
+	logging.info('Slave Node Registration finished ...')
+
 
 class CloudCache3SATJob(object):
 	'''the brute-force 3-SAT batch job.'''
@@ -47,6 +61,7 @@ class CloudCache3SATJob(object):
 	
 	def execute(self):
 		'''for each task, select proper Slave Node to execute.'''
+		global TaskStatusTable, SlaveNodeStatusTable, TaskSolutionTable, JobProgress
 		while JobProgress < len(self._Data):
 			# select a task.
 			task = ''
@@ -60,13 +75,14 @@ class CloudCache3SATJob(object):
 			slave = selector.select()
 			if slave == configure.SLAVE_STATUS_NOT_AVAILABLE:
 				continue
-
+			
 			# issue the task to slave, update the status information.
 			issuer = tools.TaskIssuer(slave, task)
 			issuer.issue()
 			TaskStatusTable[task] = configure.TASK_STATUS_WORKING
 			SlaveNodeStatusTable[slave] = configure.SLAVE_STATUS_BUSY
 			JobProgress += 1
+			logging.info('Issue to Slave Node @ %s', slave)
 		# when finished, store the results to disk.
 		results = [TaskSolutionTable[task] for task in self._Data]
 		self._Helper.storeToDisk(results, self._OutputUri)
@@ -75,6 +91,7 @@ class CloudCache3SATJob(object):
 class MasterThreadedTcpHandler(SocketServer.BaseRequestHandler):
 	'''listen to the results from the Slave Node and udpate the status.'''
 	def handle(self):
+		global TaskStatusTable, SlaveNodeStatusTable, TaskSolutionTable, JobProgress
 		# receive the <task, result> pair.
 		message = self.request.recv(4096).strip()
 		message = simplejson.load(message)
@@ -84,6 +101,7 @@ class MasterThreadedTcpHandler(SocketServer.BaseRequestHandler):
 		TaskStatusTable[task] = configure.TASK_STATUS_FINISHED
 		SlaveNodeStatusTable[self.client_address[0]] = configure.SLAVE_NODE_READY
 		TaskSolutionTable[task] = result
+		logging.info('Receive solution updates from Slave Node %s', self.client_address[0])
 
 
 class MasterThreadedTcpServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
@@ -92,6 +110,7 @@ class MasterThreadedTcpServer(SocketServer.ThreadingMixIn, SocketServer.TCPServe
 if __name__ == '__main__':
 	# global initialization.
 	GlobalInitialization()
+	SlaveNodeRegistration()
 	
 	# start the Master Node as daemon.
 	MasterServer = MasterThreadedTcpServer((configure.MASTER_NODE[0], 
