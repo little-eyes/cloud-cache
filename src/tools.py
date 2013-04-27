@@ -104,7 +104,7 @@ class LocalNetworkManager(object):
 		IpAddress = probeSocket.getsockname()[0]
 		logging.info('Slave Node service IP: %s', IpAddress)
 		probeSocket.close()
-		return IpAddress
+		return configure.PRIVATE_TO_PUBLIC_TABLE[IpAddress]
 	
 	def probeHost(self, host, port):
 		probeSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
