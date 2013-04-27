@@ -19,10 +19,12 @@ import SocketServer
 import tools
 import configure
 import logging
+import simplejson
 
 
 # setup logger.
-logging.basicConfig(level=logging.DEBUG)
+FORMAT = '%(asctime)-15s %(message)s'
+logging.basicConfig(format=FORMAT, level=logging.DEBUG)
 
 # Global variables.
 TaskStatusTable = {}
@@ -47,7 +49,7 @@ def SlaveNodeRegistration():
 	for slave in configure.SLAVE_NODE:
 		if not NetworkMgr.probeHost(slave, configure.SLAVE_PORT):
 			continue
-		SlaveNodeStatTable[slave] = configure.SLAVE_STATUS_READY
+		SlaveNodeStatusTable[slave] = configure.SLAVE_STATUS_READY
 	logging.info('Slave Node Registration finished ...')
 
 
@@ -94,14 +96,16 @@ class MasterThreadedTcpHandler(SocketServer.BaseRequestHandler):
 		global TaskStatusTable, SlaveNodeStatusTable, TaskSolutionTable, JobProgress
 		# receive the <task, result> pair.
 		message = self.request.recv(4096).strip()
-		message = simplejson.load(message)
+		message = simplejson.loads(message)
 		task = message['task']
 		result = message['result']
 		# update status.
 		TaskStatusTable[task] = configure.TASK_STATUS_FINISHED
-		SlaveNodeStatusTable[self.client_address[0]] = configure.SLAVE_NODE_READY
+		SlaveNodeStatusTable[self.client_address[0]] = configure.SLAVE_STATUS_READY
 		TaskSolutionTable[task] = result
-		logging.info('Receive solution updates from Slave Node %s', self.client_address[0])
+		JobProgress += 1
+		logging.info('Receive solution updates from Slave Node %s, total solved = %d', 
+			self.client_address[0], JobProgress)
 
 
 class MasterThreadedTcpServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):

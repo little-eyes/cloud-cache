@@ -29,7 +29,8 @@ import time
 
 
 # setup logging.
-logging.basicConfig(level=logging.DEBUG)
+FORMAT = '%(asctime)-15s %(message)s'
+logging.basicConfig(format=FORMAT, level=logging.DEBUG)
 
 
 class SlaveThreadedTcpRequestHandler(SocketServer.BaseRequestHandler):
@@ -37,23 +38,21 @@ class SlaveThreadedTcpRequestHandler(SocketServer.BaseRequestHandler):
 	def handle(self):
 		# receive and extract task.
 		message = self.request.recv(4096).strip()
-		
 		# special case for probe message.
 		if message == configure.MASTER_PROBE_MESSAGE:
 			self.request.sendall(configure.SLAVE_READY_MESSAGE)
-			return
-		
-		logging.info('Receive task from Master ...')
-		task = simplejson.load(message)['task']
-		# run the kernel-solver for the task.
-		solver = kernel.BaseKernel3SAT(task)
-		__start_timer__ = time.time() # statistics collection.
-		result = solver.solve()
-		__end_timer__ = time.time()
-		logging.info('Task finished, cost = %f ...', __end_timer__ - __start_timer__)
-		# report the results.
-		reporter = tools.TaskReporter(task, result)
-		reporter.report()
+		else:	
+			logging.info('Receive task from Master ...')
+			task = simplejson.loads(message)['task']
+			# run the kernel-solver for the task.
+			solver = kernel.CloudCacheKernel3SAT(task)
+			__start_timer__ = time.time() # statistics collection.
+			result = solver.solve()
+			__end_timer__ = time.time()
+			logging.info('Task finished, cost = %f ...', __end_timer__ - __start_timer__)
+			# report the results.
+			reporter = tools.TaskReporter(task, result)
+			reporter.report()
 
 
 
@@ -65,6 +64,7 @@ if __name__ == '__main__':
 	# start the TCP server and always listen to the task from Master Node.
 	NetworkMgr = tools.LocalNetworkManager()
 	IpAddress = NetworkMgr.getLocalIpAddress()
+	logging.info('** Slave Node service at %s:%d **', str(IpAddress), configure.SLAVE_PORT)
 	SlaveServer = SlaveThreadedTcpServer((IpAddress, configure.SLAVE_PORT), 
 		SlaveThreadedTcpRequestHandler)
 	SlaveServerThread = threading.Thread(target=SlaveServer.serve_forever)

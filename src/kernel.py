@@ -9,10 +9,12 @@
 	to see if there is existing results in the cloud.
 '''
 import logging
+import tools
 
 
 # setup logging.
-logging.basicConfig(level=logging.DEBUG)
+FORMAT = '%(asctime)-15s %(message)s'
+logging.basicConfig(format=FORMAT, level=logging.DEBUG)
 
 
 class BaseKernel3SAT(object):
@@ -27,7 +29,11 @@ class BaseKernel3SAT(object):
 			
 	def solve(self):
 		'''public interface for the base kernel-solver.'''
-		return self._RecurrsiveSolve(self._Assignment, 0)
+		solution = self._RecurrsiveSolve(self._Assignment, 0)
+		storageMgr = tools.PersistentStorageManager()
+		storageMgr.push(self._Expression, solution)
+		logging.info('Solution cached in the Redis ...')
+		return solution
 
 	def _RecurrsiveSolve(self, assignment, index):
 		'''internal recurrsive solution.'''
@@ -60,8 +66,46 @@ class BaseKernel3SAT(object):
 			if not result:
 				return False
 		return True
-			
 
 
 class CloudCacheKernel3SAT(object):
-	pass
+	'''the cloud cache approach to solve the 3-SAT problem.'''
+	def __init__(self, task):
+		self._NumberOfVariable = eval(task.split(',')[0])
+		self._NumberOfExpression = eval(task.split(',')[1])
+		self._Expression = [eval(o) for o in task.split(',')[2:]]
+		self._Assignment = [False for o in range(self._NumberOfVariable)]
+		self._BaseKernel = BaseKernel3SAT(task)
+		logging.info('CloudCacheKernel 3-SAT initialized. n = %d, m = %d', 
+			self._NumberOfVariable, self._NumberOfExpression)
+
+	def solve(self):
+		# linear traverse the problem and query the Redis server.
+		storageMgr = tools.PersistentStorageManager()
+		for i in range(0, len(self._Expression), 3):
+			subtask = self._Expression[i:]
+			assignment = storageMgr.query(subtask)
+			if assignment == []:
+				return []
+			if assignment != None and self._AssignmentValidation(self._Expression, assignment):
+				storageMgr.push(self._Expression, assignment)
+				return assignment
+		# if query failed, then use base kernel to solve.
+		return self._BaseKernel.solve()
+
+	def _AssignmentValidation(self, expression, assignment):
+		'''expression and assignment are lists.'''
+		result = True
+		for i in range(len(expression)/3):
+			a = expression[i*3]
+			b = expression[i*3 + 1]
+			c = expression[i*3 + 2]
+			if abs(a) >= len(assignment) or abs(b) >= len(assignment) or abs(c) >= len(assignment):
+				return False
+			va = assignment[abs(a)] if a > 0 else (not assignment[abs(a)])
+			vb = assignment[abs(b)] if b > 0 else (not assignment[abs(b)])
+			vc = assignment[abs(c)] if c > 0 else (not assignment[abs(c)])
+			result &= (va | vb | vc)
+			if not result:
+				return False
+		return True

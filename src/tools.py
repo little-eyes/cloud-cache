@@ -15,7 +15,8 @@ import logging
 
 
 # setup logger.
-logging.basicConfig(level=logging.DEBUG)
+FORMAT = '%(asctime)-15s %(message)s'
+logging.basicConfig(format=FORMAT, level=logging.DEBUG)
 
 
 class JobDataHelper(object):
@@ -60,7 +61,7 @@ class TaskIssuer(object):
 	def __init__(self, slave, task):
 		self._Ip = slave
 		self._Port = configure.SLAVE_PORT
-		self._Task = self._serialzeTask(task)
+		self._Task = self._serializeTask(task)
 	
 	def _serializeTask(self, task):
 		return simplejson.dumps({'task':task})
@@ -82,9 +83,10 @@ class TaskReporter(object):
 		self._Ip = configure.MASTER_NODE[0]
 		self._Port = configure.MASTER_PORT
 		self._Report = self._serializeReport(task, result)
+		print self._Report
 	
 	def _serializeReport(self, task, result):
-		return simplejson.dumps({'task':self._Task, 'result':self._Result})
+		return simplejson.dumps({'task':task, 'result':result})
 
 	def report(self):
 		sendSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -104,30 +106,59 @@ class LocalNetworkManager(object):
 		IpAddress = probeSocket.getsockname()[0]
 		logging.info('Slave Node service IP: %s', IpAddress)
 		probeSocket.close()
-		return configure.PRIVATE_TO_PUBLIC_TABLE[IpAddress]
+		return IpAddress
 	
 	def probeHost(self, host, port):
+		print host, port
 		probeSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		probeSocket.settimeout(1.0) # timeout is set to be 1 second.
 		probeSocket.connect((host, port))
 		try:
 			probeSocket.sendall(configure.MASTER_PROBE_MESSAGE)
-			response = probeSocket.recv(1024).strip()
-			return True if response == configure.SLAVE_READY_MESSAGE else False
+			return True
 		except socket.timeout:
 			logging.info('Slave Node probe failure: %s ', host)
+			return False
 		finally:
 			probeSocket.close()
 
 class PersistentStorageManager(object):
-	'''manage the persistent key/value (both JSON strings) storage on Redis server.'''
+	'''manage the persistent key/value storage on Redis server.'''
 	def __init__(self):
 		self._RedisConnector = redis.Redis()
 
 	def query(self, key):
 		'''query if the given key exist.'''
-		return self._RedisConnector.get(key)
+		key = self._serializeArray(key)
+		result = self._RedisConnector.get(key)
+		if not result:
+			return None
+		return self._recoverArray(result)
 
 	def push(self, key, value):
 		'''cache the solution to the redis server. return True/False.'''
+		key = self._serializeArray(key)
+		value = self._serializeArray(value)
 		return self._RedisConnector.set(key, value)
+
+	def _serializeArray(self, array):
+		if len(array) == 0:
+			return ''
+		sequence = ''
+		for item in array:
+			sequence += str(item) + ','
+		return sequence[0:len(sequence)-1]
+	
+	def _recoverArray(self, sequence):
+		array = []
+		sequence = sequence.split(',')
+		for item in sequence:
+			array.append(eval(item))
+		return array
+
+	def clearAll(self):
+		count = 0
+		for key in self._RedisConnector.keys():
+			self._RedisConnector.delete(key)
+			count += 1
+		logging.info('%d keys have been clearup in Redis ...', count)
