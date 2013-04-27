@@ -28,10 +28,14 @@ JobProgress = 0
 
 def GlobalInitialization():
 	'''the global initialization function.'''
-	global TaskStatusTable = {}
-	global SlaveNodeStatusTable = {}
-	global TaskSolutionTable = {}
-	global JobProgress = 0
+	global TaskStatusTable
+	global SlaveNodeStatusTable
+	global TaskSolutionTable
+	global JobProgress
+	TaskStatusTable = {}
+	SlaveNodeStatusTable = {}
+	TaskSolutionTable = {}
+	JobProgress = 0
 
 class CloudCache3SATJob(object):
 	'''the brute-force 3-SAT batch job.'''
