@@ -102,6 +102,7 @@ class LocalNetworkManager(object):
 		probeSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		probeSocket.connect(("www.google.com",80))
 		IpAddress = probeSocket.getsockname()[0]
+		logging.info('Slave Node service IP: %s', IpAddress)
 		probeSocket.close()
 		return IpAddress
 	
