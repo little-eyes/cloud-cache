@@ -6,8 +6,8 @@
 	rely on this file to configure the system.
 '''
 
-#MASTER_NODE = ['10.208.175.127']
-MASTER_NODE = ['localhost']
+MASTER_NODE = ['10.208.175.127']
+#MASTER_NODE = ['localhost']
 SLAVE_NODE = ['10.198.129.131', '10.210.205.29', '10.96.37.25', '10.96.245.71']
 
 MASTER_PORT = 12530
