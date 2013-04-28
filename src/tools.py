@@ -116,7 +116,6 @@ class LocalNetworkManager(object):
 		return IpAddress
 	
 	def probeHost(self, host, port):
-		print host, port
 		probeSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		probeSocket.settimeout(1.0) # timeout is set to be 1 second.
 		probeSocket.connect((host, port))
