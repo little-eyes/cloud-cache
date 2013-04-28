@@ -21,7 +21,7 @@ using namespace std;
 
 
 int main (int argc, char *argv[]) {
-	int NumberOfCases = 1000000;
+	int NumberOfCases = 100;
 	if (argc == 3 && strcmp(argv[1], "-n") == 0)
 		NumberOfCases = atoi(argv[2]);
 	FILE *fp = fopen("3-sat.in", "w");
