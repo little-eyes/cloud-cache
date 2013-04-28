@@ -30,12 +30,9 @@ class JobDataHelper(object):
 		logging.info('Job data loaded, total tasks = %d', len(data))
 		return data
 
-	def storeToDisk(self, data, uri):
-		'''write the result list to the specific data URI.'''
-		dataWriter = open(uri, 'w')
-		for line in data:
-			dataWriter.write(self._serializeArray(line) + '\n')
-		logging.info('Jon results stored, total results = %d', len(data))
+	def sinkToDisk(self, data, dataHandler):
+		'''write data (JSON string) to the specific data URI.'''
+		dataHandler.write(data + '\n')
 
 	def _serializeArray(self, array):
 		'''serialize the array to a string.'''
@@ -64,22 +61,21 @@ class SlaveNodeSelector(object):
 		return random.choice(self._SlaveNodeStatusTable.keys())
 
 
-class TaskIssuer(object):
+class JobDispatcher(object):
 	'''issue the task to the Slave Node.'''
-	def __init__(self, slave, task):
+	def __init__(self, slave, job):
 		self._Ip = slave
 		self._Port = configure.SLAVE_PORT
-		self._Task = self._serializeTask(task)
+		self._Job = self._serializeTask(job)
 	
-	def _serializeTask(self, task):
-		return simplejson.dumps({'task':task})
+	def _serializeTask(self, job):
+		return simplejson.dumps(job)
 
-	def issue(self):
+	def dispatch(self):
 		sendSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sendSocket.connect((self._Ip, self._Port))
 		try:
-			sendSocket.sendall(self._Task)
-			sendSocket.close()
+			sendSocket.sendall(self._Job)
 		except socket.error:
 			logging.warn('Task issue failed because socket failure ...')
 		finally:
@@ -88,21 +84,22 @@ class TaskIssuer(object):
 
 class TaskReporter(object):
 	'''report the task results to the Master Node'''
-	def __init__(self, task, result):
-		self._Ip = configure.MASTER_NODE[0]
-		self._Port = configure.MASTER_PORT
-		self._Report = self._serializeReport(task, result)
-		print self._Report
+	def __init__(self):
+		self._Ip = configure.SINKER_NODE[0]
+		self._Port = configure.SINKER_PORT
 	
 	def _serializeReport(self, task, result):
 		return simplejson.dumps({'task':task, 'result':result})
 
-	def report(self):
+	def combine(self, chunk, task, result):
+		report = self._serializeReport(task, result)
+		return chunk + report + '\n'	
+
+	def report(self, report):
 		sendSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sendSocket.connect((self._Ip, self._Port))
 		try:
-			sendSocket.sendall(self._Report)
-			sendSocket.close()
+			sendSocket.sendall(report)
 		except socket.error:
 			logging.warn('Task report failed because socket failure ...')
 		finally:
@@ -133,10 +130,36 @@ class LocalNetworkManager(object):
 		finally:
 			probeSocket.close()
 
+
+class DataNodeSelector(object):
+	'''given the problem, calculate the potential data node caching the solution.'''
+	def __init__(self, task):
+		self._Task = self._serializeArray(task)
+
+	def getDataNode(self):
+		return configure.DATA_NODE[self._simpleHash(self._Task)]
+	
+	def _simpleHash(self, string):
+		count = 0
+		for char in string:
+			count += ord(char)
+		return count % len(configure.DATA_NODE)
+	
+	def _serializeArray(self, array):
+		if len(array) == 0:
+			return ''
+		sequence = ''
+		for item in array:
+			sequence += str(item) + ','
+		return sequence[0:len(sequence)-1]
+	
+
+
 class PersistentStorageManager(object):
 	'''manage the persistent key/value storage on Redis server.'''
-	def __init__(self):
-		self._RedisConnector = redis.Redis()
+	def __init__(self, pool):
+		# optimization: using connection pool.
+		self._RedisConnector = redis.Redis(connection_pool=pool)
 
 	def query(self, key):
 		'''query if the given key exist.'''

@@ -19,18 +19,20 @@ logging.basicConfig(format=FORMAT, level=logging.DEBUG)
 
 class BaseKernel3SAT(object):
 	'''the brute-force approach to solve 3-SAT problem.'''
-	def __init__(self, task):
+	def __init__(self, task, pool):
 		self._NumberOfVariable = eval(task.split(',')[0])
 		self._NumberOfExpression = eval(task.split(',')[1])
 		self._Expression = [eval(o) for o in task.split(',')[2:]]
 		self._Assignment = [False for o in range(self._NumberOfVariable)]
+		self._Pool = pool
 		logging.info('BaseKernel 3-SAT initialized. n = %d, m = %d', 
 			self._NumberOfVariable, self._NumberOfExpression)
 			
 	def solve(self):
 		'''public interface for the base kernel-solver.'''
 		solution = self._RecurrsiveSolve(self._Assignment, 0)
-		storageMgr = tools.PersistentStorageManager()
+		selector = tools.DataNodeSelector(self._Expression)
+		storageMgr = tools.PersistentStorageManager(self._Pool[selector.getDataNode()])
 		storageMgr.push(self._Expression, solution)
 		logging.info('Solution cached in the Redis ...')
 		return solution
@@ -70,25 +72,29 @@ class BaseKernel3SAT(object):
 
 class CloudCacheKernel3SAT(object):
 	'''the cloud cache approach to solve the 3-SAT problem.'''
-	def __init__(self, task):
+	def __init__(self, task, pool):
 		self._NumberOfVariable = eval(task.split(',')[0])
 		self._NumberOfExpression = eval(task.split(',')[1])
 		self._Expression = [eval(o) for o in task.split(',')[2:]]
 		self._Assignment = [False for o in range(self._NumberOfVariable)]
-		self._BaseKernel = BaseKernel3SAT(task)
+		self._BaseKernel = BaseKernel3SAT(task, pool)
+		self._Pool = pool
 		logging.info('CloudCacheKernel 3-SAT initialized. n = %d, m = %d', 
 			self._NumberOfVariable, self._NumberOfExpression)
 
 	def solve(self):
 		# linear traverse the problem and query the Redis server.
-		storageMgr = tools.PersistentStorageManager()
 		for i in range(0, len(self._Expression), 3):
 			subtask = self._Expression[i:]
+			selector = tools.DataNodeSelector(subtask)
+			storageMgr = tools.PersistentStorageManager(self._Pool[selector.getDataNode()])
 			assignment = storageMgr.query(subtask)
 			if assignment == []:
+				logging.info('*** Cache Hit! ***')
 				return []
 			if assignment != None and self._AssignmentValidation(self._Expression, assignment):
 				storageMgr.push(self._Expression, assignment)
+				logging.info('*** Cache Hit! ***')
 				return assignment
 		# if query failed, then use base kernel to solve.
 		return self._BaseKernel.solve()

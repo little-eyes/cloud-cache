@@ -27,25 +27,12 @@ import time
 FORMAT = '%(asctime)-15s %(message)s'
 logging.basicConfig(format=FORMAT, level=logging.DEBUG)
 
-# Global variables.
-TaskStatusTable = {}
+
+# global varibles.
 SlaveNodeStatusTable = {}
-TaskSolutionTable = {}
 SlaveNodeCheckinTable = {}
-JobProgress = 0
 
-# Global functions.
-def GlobalInitialization():
-	'''the global initialization function.'''
-	global TaskStatusTable, SlaveNodeStatusTable, TaskSolutionTable, \
-		JobProgress, SlaveNodeCheckinTable
-	TaskStatusTable = {}
-	SlaveNodeStatusTable = {}
-	SlaveNodeCheckinTable = {}
-	TaskSolutionTable = {}
-	JobProgress = 0
-	logging.info('Global initialization finished ...')
-
+# global function.
 def SlaveNodeRegistration():
 	'''register the slave node initially.'''
 	global SlaveNodeStatusTable, SlaveNodeCheckinTable
@@ -66,75 +53,41 @@ class CloudCache3SATJob(object):
 		self._Helper = tools.JobDataHelper()
 		self._Data = self._Helper.loadFromDisk(self._InputUri)
 	
-	def execute(self):
-		'''for each task, select proper Slave Node to execute.'''
-		global TaskStatusTable, SlaveNodeStatusTable, TaskSolutionTable, JobProgress
-		while JobProgress < len(self._Data):
-			# select a task.
-			task = ''
-			for item in self._Data:
-				if item not in TaskStatusTable.keys():
-					task = item
-					break
-					
-			# select a Slave Node if possible.
-			selector = tools.SlaveNodeSelector(SlaveNodeStatusTable, SlaveNodeCheckinTable)
-			#slave = selector.select()
-			slave = selector.random()
-			if slave == configure.SLAVE_STATUS_NOT_AVAILABLE:
-				continue
-			
-			# issue the task to slave, update the status information.
-			issuer = tools.TaskIssuer(slave, task)
-			issuer.issue()
-			TaskStatusTable[task] = configure.TASK_STATUS_WORKING
-			SlaveNodeStatusTable[slave] = configure.SLAVE_STATUS_BUSY
-			JobProgress += 1
-			#logging.info('Issue to Slave Node @ %s', slave)
-			time.sleep(0.05)
-		# when finished, store the results to disk.
-		results = [TaskSolutionTable[task] for task in self._Data]
-		self._Helper.storeToDisk(results, self._OutputUri)
+	def distribute(self):
+		NumberOfSlaveNodes = len(configure.SLAVE_NODE)
+		JobSplit = {}
+		for slave in configure.SLAVE_NODE:
+			if SlaveNodeStatusTable[slave] == configure.SLAVE_STATUS_READY:
+				JobSplit[slave] = []
+		# split the job.
+		JobChunkSize = len(self._Data)/NumberOfSlaveNodes
+		k = 0
+		for slave in JobSplit.keys():
+			JobSplit[slave] = self._Data[k*JobChunkSize : max((k+1)*JobChunkSize, len(self._Data))]
+			k += 1
+		# distribute subjob to Slave Node.
+		for slave in JobSplit.keys():
+			manager = tools.JobDispatcher(slave, JobSplit[slave])
+			manager.dispatch()
+			logging.info('%d task has been distribute to Slave Node %s', len(JobSplit[slave]), slave)
 
 
 class MasterThreadedTcpHandler(SocketServer.BaseRequestHandler):
 	'''listen to the results from the Slave Node and udpate the status.'''
 	def handle(self):
-		global TaskStatusTable, SlaveNodeStatusTable, SlaveNodeCheckinTable, \
-			TaskSolutionTable, JobProgress
-		# receive the <task, result> pair.
-		message = self.request.recv(4096).strip()
-		message = simplejson.loads(message)
-		task = message['task']
-		result = message['result']
-		# update status.
-		TaskStatusTable[task] = configure.TASK_STATUS_FINISHED
-		SlaveNodeStatusTable[self.client_address[0]] = configure.SLAVE_STATUS_READY
-		TaskSolutionTable[task] = result
-		SlaveNodeCheckinTable[self.client_address[0]] = time.time()
-		JobProgress += 1
-		logging.info('Receive solution updates from Slave Node %s, total solved = %d', 
-			self.client_address[0], JobProgress)
-
+		# receive the job submission from client.
+		command = self.request.recv(4096).strip()
+		if command == configure.COMMAND_3_SAT:
+			SlaveNodeRegistration()
+			job = CloudCache3SATJob(configure.JOB_DATA_INPUT_URI, configure.JOB_OUTPUT_URI)
+			job.distribute()
 
 class MasterThreadedTcpServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 	pass
 
 if __name__ == '__main__':
-	# global initialization.
-	GlobalInitialization()
-	SlaveNodeRegistration()
-	
-	# start the Master Node as daemon.
+	# start the Master Node.
 	MasterServer = MasterThreadedTcpServer((configure.MASTER_NODE[0], 
 		configure.MASTER_PORT), MasterThreadedTcpHandler)
 	MasterServerThread = threading.Thread(target=MasterServer.serve_forever)
-	#MasterServerThread.daemon = True
 	MasterServerThread.start()
-
-	# start load job
-	job = CloudCache3SATJob(configure.JOB_DATA_INPUT_URI, configure.JOB_OUTPUT_URI)
-	job.execute()
-
-	# turn off Tcp server.
-	MasterServer.shutdown()

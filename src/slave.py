@@ -26,6 +26,7 @@ import simplejson
 import kernel
 import logging
 import time
+import redis
 
 
 # setup logging.
@@ -33,26 +34,50 @@ FORMAT = '%(asctime)-15s %(message)s'
 logging.basicConfig(format=FORMAT, level=logging.DEBUG)
 
 
+# global variable
+DataNodeConnectionPool = {}
+ReportChunk = ''
+ReportCounter = 0
+
+
+# global initialization
+def GlobalInitialization():
+	global DataNodeConnectionPool
+	for node in configure.DATA_NODE:
+		DataNodeConnectionPool[node] = redis.ConnectionPool(host=node)
+		logging.info('Estabilished Redis connection: %s', node)
+
+
 class SlaveThreadedTcpRequestHandler(SocketServer.BaseRequestHandler):
 	'''The slave handler to run a single kernel-solver.'''
 	def handle(self):
-		# receive and extract task.
-		message = self.request.recv(4096).strip()
-		# special case for probe message.
-		if message == configure.MASTER_PROBE_MESSAGE:
-			self.request.sendall(configure.SLAVE_READY_MESSAGE)
-		else:	
-			logging.info('Receive task from Master ...')
-			task = simplejson.loads(message)['task']
-			# run the kernel-solver for the task.
-			solver = kernel.CloudCacheKernel3SAT(task)
+		# receive and extrac the task chunk.
+		logging.info('Receive job from Master ...')
+		message = ''
+		while True:
+			chunk = self.request.recv(4096).strip()
+			message += chunk
+			if len(chunk) == 0:
+				break
+		
+		logging.info('Job has been received ...')
+		subjob = simplejson.loads(message)
+		# run the kernel-solver for each task.
+		global DataNodeConnectionPool, ReportCounter, ReportChunk
+		for task in subjob:
+			solver = kernel.CloudCacheKernel3SAT(task, DataNodeConnectionPool)
 			__start_timer__ = time.time() # statistics collection.
 			result = solver.solve()
 			__end_timer__ = time.time()
 			logging.info('Task finished, cost = %f ...', __end_timer__ - __start_timer__)
 			# report the results.
-			reporter = tools.TaskReporter(task, result)
-			reporter.report()
+			reporter = tools.TaskReporter()
+			if ReportCounter < configure.REPORT_CHUNK_SIZE:
+				ReportChunk = reporter.combine(ReportChunk, task, chunk)
+				ReportCounter += 1
+			else:
+				reporter.report(ReportChunk)
+				ReportCounter = 0
 
 
 class SlaveThreadedTcpServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
@@ -60,6 +85,9 @@ class SlaveThreadedTcpServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer
 
 
 if __name__ == '__main__':
+	# global initialization.
+	GlobalInitialization()
+	
 	# start the TCP server and always listen to the task from Master Node.
 	NetworkMgr = tools.LocalNetworkManager()
 	IpAddress = NetworkMgr.getLocalIpAddress()
