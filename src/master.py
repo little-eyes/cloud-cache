@@ -42,7 +42,7 @@ def SlaveNodeRegistration():
 			continue
 		SlaveNodeStatusTable[slave] = configure.SLAVE_STATUS_READY
 		SlaveNodeCheckinTable[slave] = time.time()
-	logging.info('Slave Node Registration finished ...')
+		logging.info('Slave Node Registration %s: success! ...', slave)
 
 
 class CloudCache3SATJob(object):
@@ -63,13 +63,18 @@ class CloudCache3SATJob(object):
 		JobChunkSize = len(self._Data)/NumberOfSlaveNodes
 		k = 0
 		for slave in JobSplit.keys():
-			JobSplit[slave] = self._Data[k*JobChunkSize : max((k+1)*JobChunkSize, len(self._Data))]
+			JobSplit[slave] = self._Data[k*JobChunkSize : min((k+1)*JobChunkSize, len(self._Data))]
 			k += 1
+			logging.info('Split job to Slave Node %s, totoal amount = %d ... ', slave, len(JobSplit[slave]))
 		# distribute subjob to Slave Node.
 		for slave in JobSplit.keys():
 			manager = tools.JobDispatcher(slave, JobSplit[slave])
+			logging.info('start job distribution for Slave Node %s', slave)
 			manager.dispatch()
 			logging.info('%d task has been distribute to Slave Node %s', len(JobSplit[slave]), slave)
+			JobSplit[slave] = None # clean up the memory.
+		# cleanup the memory copy.
+		self._Data = None
 
 
 class MasterThreadedTcpHandler(SocketServer.BaseRequestHandler):

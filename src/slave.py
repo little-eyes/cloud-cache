@@ -27,11 +27,16 @@ import kernel
 import logging
 import time
 import redis
+import csv
 
 
 # setup logging.
 FORMAT = '%(asctime)-15s %(message)s'
 logging.basicConfig(format=FORMAT, level=logging.DEBUG)
+
+
+# statistics collection.
+runtime = csv.writer(open(configure.RUNTIME_COLLECTION_URI, 'a'), delimiter=',')
 
 
 # global variable
@@ -70,10 +75,11 @@ class SlaveThreadedTcpRequestHandler(SocketServer.BaseRequestHandler):
 			result = solver.solve()
 			__end_timer__ = time.time()
 			logging.info('Task finished, cost = %f ...', __end_timer__ - __start_timer__)
+			runtime.writerow([__end_timer__, __start_timer__])
 			# report the results.
 			reporter = tools.TaskReporter()
 			if ReportCounter < configure.REPORT_CHUNK_SIZE:
-				ReportChunk = reporter.combine(ReportChunk, task, chunk)
+				ReportChunk = reporter.combine(ReportChunk, task, result)
 				ReportCounter += 1
 			else:
 				reporter.report(ReportChunk)
