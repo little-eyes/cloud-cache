@@ -47,6 +47,7 @@ SLAVE_READY_MESSAGE = '7'
 JOB_DATA_INPUT_URI = 'external/3-sat.in'
 JOB_OUTPUT_URI = 'external/solution.out'
 RUNTIME_COLLECTION_URI = 'external/stat.out'
+CACHE_STATISTICS_URI = 'external/cache.out'
 
 COMMAND_3_SAT = '3-sat'
 REPORT_CHUNK_SIZE = 1000

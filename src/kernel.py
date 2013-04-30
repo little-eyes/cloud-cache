@@ -10,6 +10,7 @@
 '''
 import logging
 import tools
+import csv
 
 
 # setup logging.
@@ -83,6 +84,8 @@ class CloudCacheKernel3SAT(object):
 			self._NumberOfVariable, self._NumberOfExpression)
 
 	def solve(self):
+		# setup a statistics for cache hit rate.
+		stat = csv.writer(open(configure.CACHE_STATISTICS_URI, 'a'), delimiter=',')
 		# linear traverse the problem and query the Redis server.
 		for i in range(0, len(self._Expression), 3):
 			subtask = self._Expression[i:]
@@ -91,12 +94,15 @@ class CloudCacheKernel3SAT(object):
 			assignment = storageMgr.query(subtask)
 			if assignment == []:
 				logging.info('*** Cache Hit! ***')
+				stat.writerow([time.time(), 1])
 				return []
 			if assignment != None and self._AssignmentValidation(self._Expression, assignment):
 				storageMgr.push(self._Expression, assignment)
 				logging.info('*** Cache Hit! ***')
+				stat.writerow([time.time(), 1])
 				return assignment
 		# if query failed, then use base kernel to solve.
+		stat.writerow([time.time(), 0])
 		return self._BaseKernel.solve()
 
 	def _AssignmentValidation(self, expression, assignment):
