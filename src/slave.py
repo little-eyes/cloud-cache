@@ -37,20 +37,24 @@ logging.basicConfig(format=FORMAT, level=logging.DEBUG)
 
 # statistics collection.
 runtime = csv.writer(open(configure.RUNTIME_COLLECTION_URI, 'a'), delimiter=',')
+cachehit = csv.writer(open(configure.CACHE_STATISTICS_URI, 'a'), delimiter=',')
 
 
 # global variable
 DataNodeConnectionPool = {}
+DataNodeConnectionPipeline = {}
 ReportChunk = ''
 ReportCounter = 0
 
 
 # global initialization
 def GlobalInitialization():
-	global DataNodeConnectionPool
+	global DataNodeConnectionPool, DataNodeConnectionPipeline
 	for node in configure.DATA_NODE:
 		DataNodeConnectionPool[node] = redis.ConnectionPool(host=node)
-		logging.info('Estabilished Redis connection: %s', node)
+		DataNodeConnectionPipeline[node] = tools.PipelineStorageManager(
+			redis.Redis(connection_pool=DataNodeConnectionPool[node]))
+		logging.info('Estabilished Redis connection and pipeline: %s', node)
 
 
 class SlaveThreadedTcpRequestHandler(SocketServer.BaseRequestHandler):
@@ -68,15 +72,25 @@ class SlaveThreadedTcpRequestHandler(SocketServer.BaseRequestHandler):
 		logging.info('Job has been received ...')
 		subjob = simplejson.loads(message)
 		# run the kernel-solver for each task.
-		global DataNodeConnectionPool, ReportCounter, ReportChunk
+		global DataNodeConnectionPool, ReportCounter, ReportChunk, DataNodeConnectionPipeline
 		for task in subjob:
-			solver = kernel.CloudCacheKernel3SAT(task, DataNodeConnectionPool)
+			solver = kernel.CloudCacheKernel3SAT(task, DataNodeConnectionPool, cachehit)
+			
 			#solver = kernel.BaseKernel3SAT(task, DataNodeConnectionPool)
 			__start_timer__ = time.time() # statistics collection.
-			result = solver.solve()
+			(problem, result) = solver.solve()
 			__end_timer__ = time.time()
+			
+			# pipeline the cache write.
+			selector = tools.DataNodeSelector(problem)
+			datanode = selector.getDataNode()
+			DataNodeConnectionPipeline[datanode].buffer(problem, result)
+			if DataNodeConnectionPipeline[datanode].getBufferSize == configure.PIPELINE_BUFFER_SIZE:
+				DataNodeConnectionPipeline[datanode].execute()
+
 			logging.info('Task finished, cost = %f ...', __end_timer__ - __start_timer__)
 			runtime.writerow([__end_timer__, __start_timer__])
+			
 			# report the results.
 			reporter = tools.TaskReporter()
 			if ReportCounter < configure.REPORT_CHUNK_SIZE:

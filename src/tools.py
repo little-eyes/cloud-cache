@@ -195,3 +195,32 @@ class PersistentStorageManager(object):
 			self._RedisConnector.delete(key)
 			count += 1
 		logging.info('%d keys have been clearup in Redis ...', count)
+
+
+class PipelineStorageManager(object):
+	'''the Data Node pipeline cache write class.'''
+	def __init__(self, pipeline):
+		self._DataNodePipeline = pipeline
+		self._BufferSize = 0
+
+	def buffer(self, key, value):
+		key = self._serializeArray(key)
+		value = self._serializeArray(value)
+		self._DataNodePipeline.set(key, value)
+		self._BufferSize += 1
+
+	def getBufferSize(self):
+		return self._BufferSize
+
+	def execute(self):
+		self._DataNodePipeline.execute()
+		self._BufferSize = 0
+	
+	def _serializeArray(self, array):
+		if len(array) == 0:
+			return ''
+		sequence = ''
+		for item in array:
+			sequence += str(item) + ','
+		return sequence[0:len(sequence)-1]
+	

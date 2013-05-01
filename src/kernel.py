@@ -10,6 +10,7 @@
 '''
 import logging
 import tools
+import time
 import csv
 
 
@@ -32,11 +33,11 @@ class BaseKernel3SAT(object):
 	def solve(self):
 		'''public interface for the base kernel-solver.'''
 		solution = self._RecurrsiveSolve(self._Assignment, 0)
-		selector = tools.DataNodeSelector(self._Expression)
-		storageMgr = tools.PersistentStorageManager(self._Pool[selector.getDataNode()])
-		storageMgr.push(self._Expression, solution)
-		logging.info('Solution cached in the Redis ...')
-		return solution
+		#selector = tools.DataNodeSelector(self._Expression)
+		#storageMgr = tools.PersistentStorageManager(self._Pool[selector.getDataNode()])
+		#storageMgr.push(self._Expression, solution)
+		#logging.info('Solution cached in the Redis ...')
+		return (self._Expression, solution)
 
 	def _RecurrsiveSolve(self, assignment, index):
 		'''internal recurrsive solution.'''
@@ -73,19 +74,20 @@ class BaseKernel3SAT(object):
 
 class CloudCacheKernel3SAT(object):
 	'''the cloud cache approach to solve the 3-SAT problem.'''
-	def __init__(self, task, pool):
+	def __init__(self, task, pool, cachehit):
 		self._NumberOfVariable = eval(task.split(',')[0])
 		self._NumberOfExpression = eval(task.split(',')[1])
 		self._Expression = [eval(o) for o in task.split(',')[2:]]
 		self._Assignment = [False for o in range(self._NumberOfVariable)]
 		self._BaseKernel = BaseKernel3SAT(task, pool)
 		self._Pool = pool
+		self._CacheHitStatistics = cachehit
 		logging.info('CloudCacheKernel 3-SAT initialized. n = %d, m = %d', 
 			self._NumberOfVariable, self._NumberOfExpression)
 
 	def solve(self):
 		# setup a statistics for cache hit rate.
-		stat = csv.writer(open(configure.CACHE_STATISTICS_URI, 'a'), delimiter=',')
+		#stat = csv.writer(open(configure.CACHE_STATISTICS_URI, 'a'), delimiter=',')
 		# linear traverse the problem and query the Redis server.
 		for i in range(0, len(self._Expression), 3):
 			subtask = self._Expression[i:]
@@ -94,15 +96,15 @@ class CloudCacheKernel3SAT(object):
 			assignment = storageMgr.query(subtask)
 			if assignment == []:
 				logging.info('*** Cache Hit! ***')
-				stat.writerow([time.time(), 1])
-				return []
+				#self._CacheHitStatistics.writerow([time.time(), 1])
+				return (self._Expression, [])
 			if assignment != None and self._AssignmentValidation(self._Expression, assignment):
-				storageMgr.push(self._Expression, assignment)
+				#storageMgr.push(self._Expression, assignment)
 				logging.info('*** Cache Hit! ***')
-				stat.writerow([time.time(), 1])
-				return assignment
+				#self._CacheHitStatistics.writerow([time.time(), 1])
+				return (self._Expression, assignment)
 		# if query failed, then use base kernel to solve.
-		stat.writerow([time.time(), 0])
+		self._CacheHitStatistics.writerow([time.time(), 0])
 		return self._BaseKernel.solve()
 
 	def _AssignmentValidation(self, expression, assignment):
