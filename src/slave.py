@@ -70,8 +70,8 @@ class SlaveThreadedTcpRequestHandler(SocketServer.BaseRequestHandler):
 		# run the kernel-solver for each task.
 		global DataNodeConnectionPool, ReportCounter, ReportChunk
 		for task in subjob:
-			#solver = kernel.CloudCacheKernel3SAT(task, DataNodeConnectionPool)
-			solver = kernel.BaseKernel3SAT(task, DataNodeConnectionPool)
+			solver = kernel.CloudCacheKernel3SAT(task, DataNodeConnectionPool)
+			#solver = kernel.BaseKernel3SAT(task, DataNodeConnectionPool)
 			__start_timer__ = time.time() # statistics collection.
 			result = solver.solve()
 			__end_timer__ = time.time()
