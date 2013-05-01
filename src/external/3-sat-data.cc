@@ -19,16 +19,19 @@
 
 using namespace std;
 
+const int MAX_NUMBER_VARIABLE = 16;
+const int MAX_NUMBER_EXPRESSION = 256;
+
 
 int main (int argc, char *argv[]) {
-	int NumberOfCases = 100;
+	int NumberOfCases = 10000;
 	if (argc == 3 && strcmp(argv[1], "-n") == 0)
 		NumberOfCases = atoi(argv[2]);
 	FILE *fp = fopen("3-sat.in", "w");
 	srand(time(NULL));
 	for (int i = 0; i < NumberOfCases; ++i) {
-		int NumberOfVariables = rand() % 20 + 1;
-		int NumberOfExpressions = 3 * (rand() % 30 + 1);
+		int NumberOfVariables = rand() % MAX_NUMBER_VARIABLE + 1;
+		int NumberOfExpressions = 3 * (rand() % MAX_NUMBER_EXPRESSION + 1);
 		fprintf(fp, "%d,%d", NumberOfVariables, NumberOfExpressions);
 		for (int j = 0; j < NumberOfExpressions; ++j) {
 			int x = (rand() % 100000) % NumberOfVariables;
