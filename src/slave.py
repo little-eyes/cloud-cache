@@ -74,22 +74,20 @@ class SlaveThreadedTcpRequestHandler(SocketServer.BaseRequestHandler):
 		# run the kernel-solver for each task.
 		global DataNodeConnectionPool, ReportCounter, ReportChunk, DataNodeConnectionPipeline
 		for task in subjob:
-			solver = kernel.CloudCacheKernel3SAT(task, DataNodeConnectionPool, cachehit)
-			
-			#solver = kernel.BaseKernel3SAT(task, DataNodeConnectionPool)
+			#solver = kernel.CloudCacheKernel3SAT(task, DataNodeConnectionPool, cachehit)
+			solver = kernel.BaseKernel3SAT(task, DataNodeConnectionPool)
 			__start_timer__ = time.time() # statistics collection.
 			(problem, result) = solver.solve()
 			__end_timer__ = time.time()
-			
-			# pipeline the cache write.
-			selector = tools.DataNodeSelector(problem)
-			datanode = selector.getDataNode()
-			DataNodeConnectionPipeline[datanode].buffer(problem, result)
-			if DataNodeConnectionPipeline[datanode].getBufferSize == configure.PIPELINE_BUFFER_SIZE:
-				DataNodeConnectionPipeline[datanode].execute()
-
 			logging.info('Task finished, cost = %f ...', __end_timer__ - __start_timer__)
 			runtime.writerow([__end_timer__, __start_timer__])
+			
+			# pipeline the cache write.
+			#selector = tools.DataNodeSelector(problem)
+			#datanode = selector.getDataNode()
+			#DataNodeConnectionPipeline[datanode].buffer(problem, result)
+			#if DataNodeConnectionPipeline[datanode].getBufferSize == configure.PIPELINE_BUFFER_SIZE:
+			#	DataNodeConnectionPipeline[datanode].execute()
 			
 			# report the results.
 			reporter = tools.TaskReporter()
