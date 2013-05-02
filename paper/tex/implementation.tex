@@ -36,3 +36,5 @@ For the Redis server, it has to be deployed before running any module in the Dat
 Two important programming interface in the CloudCache is in the tools.py module. The two APIs are \emph{tools.PersistentStorageManager.query(key)} and \emph{tools.PersistentStorageManager.push(key, value)}. 
 
 A developer can call these two APIs to simply the cache operations in the implementation of kernel-solver. The kernel-solver is an abstract name, however, in practice, a developer needs to implement the solver class. For example, the 3-SAT problem, we implement \emph{BaseKernel3SAT} and \emph{CloudCacheKernel3SAT} classes which will be instantiated in job execution handler. Again, the developer does not need to pay additional attention to the data structure of key and value, because the two APIs above will serialize the key and value first before conducting cache operations.
+
+\subsection{Implementation Optimizations}
