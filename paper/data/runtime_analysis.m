@@ -23,8 +23,12 @@ runtime2 = ccache(:,1) - ccache(:,2);
 figure(1); hold on;
 plot(x1, r1, '-r', 'linewidth', 2);
 plot(x2, r2, '-b', 'linewidth', 2);
-axis([0 10 0 1]);
+axis([0 5 0 1]);
 grid on;
+set(gca, 'fontsize', 14);
+xlabel('Problem Solving Time (second)');
+ylabel('CDF');
+legend('Brute-force solution', 'CloudCache Framework');
 hold off;
 
 % slave = sortrows(simple, 1);
