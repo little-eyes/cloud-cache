@@ -49,6 +49,7 @@ class SlaveNodeSelector(object):
 		self._SlaveNodeCheckinTable = checkin
 	
 	def select(self):
+		'''select a Slave Node to assign the task.'''
 		EarliestCheckin = None
 		SelectedSlave = configure.SLAVE_STATUS_NOT_AVAILABLE
 		for slave in self._SlaveNodeStatusTable.keys():
@@ -58,6 +59,7 @@ class SlaveNodeSelector(object):
 		return SelectedSlave
 	
 	def random(self):
+		'''if multiple Slave Nodes are available, randomly choose one.'''
 		return random.choice(self._SlaveNodeStatusTable.keys())
 
 
@@ -92,10 +94,12 @@ class TaskReporter(object):
 		return simplejson.dumps({'task':task, 'result':result})
 
 	def combine(self, chunk, task, result):
+		'''accumualte the reports together.'''
 		report = self._serializeReport(task, result)
 		return chunk + report + '\n'	
 
 	def report(self, report):
+		'''report the results to Sinker Node.'''
 		sendSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sendSocket.connect((self._Ip, self._Port))
 		try:
@@ -116,6 +120,7 @@ class LocalNetworkManager(object):
 		return IpAddress
 	
 	def probeHost(self, host, port):
+		'''probe a host is online or not, used to check Slave Node's status.'''
 		probeSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		probeSocket.settimeout(1.0) # timeout is set to be 1 second.
 		probeSocket.connect((host, port))
@@ -136,6 +141,7 @@ class DataNodeSelector(object):
 		self._Task = self._serializeArray(task)
 
 	def getDataNode(self):
+		'''use hash to select the Data Node.'''
 		return configure.DATA_NODE[self._simpleHash(self._Task)]
 	
 	def _simpleHash(self, string):
@@ -204,6 +210,7 @@ class PipelineStorageManager(object):
 		self._BufferSize = 0
 
 	def buffer(self, key, value):
+		'''buffer the push oepration.'''
 		key = self._serializeArray(key)
 		value = self._serializeArray(value)
 		self._DataNodePipeline.set(key, value)
@@ -213,6 +220,7 @@ class PipelineStorageManager(object):
 		return self._BufferSize
 
 	def execute(self):
+		'''execute the push all together.'''
 		self._DataNodePipeline.execute()
 		self._BufferSize = 0
 	

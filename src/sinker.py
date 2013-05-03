@@ -2,7 +2,7 @@
 	CS594 Cloud Computing Course Project.
 	Author: Jilong Liao (jliao2@utk.edu)
 
-	The Sink Node is used to receive all the solutions comes out
+	The Sinker Node is used to receive all the solutions comes out
 	of the Slave Node which is isolated from the Master Node.
 
 	The change of the design comes from a benchmark which indicates

@@ -86,6 +86,7 @@ class CloudCacheKernel3SAT(object):
 			self._NumberOfVariable, self._NumberOfExpression)
 
 	def solve(self):
+		'''the public solve API.'''
 		# setup a statistics for cache hit rate.
 		#stat = csv.writer(open(configure.CACHE_STATISTICS_URI, 'a'), delimiter=',')
 		# linear traverse the problem and query the Redis server.
