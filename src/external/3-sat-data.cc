@@ -1,4 +1,7 @@
 /*
+ * CS594 Cloud Computing Course Project
+ * Author: Jilong Liao (jliao2@utk.edu)
+ *
  * This module is used to generate the 3-SAT 
  * input data. The data format shows in the
  * following:
@@ -21,6 +24,7 @@ using namespace std;
 
 const int MAX_NUMBER_VARIABLE = 16;
 const int MAX_NUMBER_EXPRESSION = 256;
+const int NOT_GATE_THRESHOLD = 80;
 
 
 int main (int argc, char *argv[]) {
@@ -35,7 +39,7 @@ int main (int argc, char *argv[]) {
 		fprintf(fp, "%d,%d", NumberOfVariables, NumberOfExpressions);
 		for (int j = 0; j < NumberOfExpressions; ++j) {
 			int x = (rand() % 100000) % NumberOfVariables;
-			if (rand() % 100 >= 80) x = -x;
+			if (rand() % 100 >= NOT_GATE_THRESHOLD) x = -x;
 			fprintf(fp, ",%d", x);
 		}
 		fprintf(fp, "\n");
